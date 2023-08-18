@@ -119,7 +119,9 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   };
 
   function getColor() {
-    if (ship.ownerAddress === game.player1Address) {
+    if (!ship) {
+      return "black";
+    } else if (ship.ownerAddress === game.player1Address) {
       return "red";
     } else if (ship.ownerAddress === game.player2Address) {
       return "blue";
