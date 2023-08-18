@@ -183,7 +183,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
         <input
           type="radio"
           value="mine"
-          disabled={Number(ship.remainingMines) <= 0}
+          disabled={Number(ship?.remainingMines) <= 0}
           checked={action.deploy === "mine"}
           onChange={() => setAction((prev) => ({ ...prev, deploy: "mine" }))}
         />
@@ -193,7 +193,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
         <input
           type="radio"
           value="torpedo"
-          disabled={Number(ship.remainingTorpedoes) <= 0}
+          disabled={Number(ship?.remainingTorpedoes) <= 0}
           checked={action.deploy === "torpedo"}
           onChange={() => setAction((prev) => ({ ...prev, deploy: "torpedo" }))}
         />
