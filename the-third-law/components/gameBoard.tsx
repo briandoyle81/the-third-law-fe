@@ -14,7 +14,7 @@ const START_INDEX = -20;
 const END_INDEX = 20;
 const ASTEROID_SIZE = 10;
 const MINE_RANGE = 2;
-const TORPEDO_ACCEL = 3;
+const TORPEDO_ACCEL = 1;
 
 const containerStyle: React.CSSProperties = {
   display: "flex",
@@ -167,7 +167,8 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
       torpedoes.some(
         (torpedo) =>
           Number(torpedo.position.row) === row &&
-          Number(torpedo.position.col) === col
+          Number(torpedo.position.col) === col &&
+          Number(torpedo.remainingFuel) > 0
       )
     );
   };
@@ -182,7 +183,8 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
       torpedoes.some(
         (torpedo) =>
           Number(torpedo.position.row) + Number(torpedo.velocity.row) === row &&
-          Number(torpedo.position.col) + Number(torpedo.velocity.col) === col
+          Number(torpedo.position.col) + Number(torpedo.velocity.col) === col &&
+          Number(torpedo.remainingFuel) > 0
       )
     );
   };
@@ -201,6 +203,44 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
         Number(mine.position.col)
       ) <= MINE_RANGE
     );
+  };
+
+  const isSquareWithinTorpedoEffectRange = (
+    row: number,
+    col: number,
+    torpedoes: Torpedo[] | undefined
+  ): boolean => {
+    if (!torpedoes) return false;
+
+    return torpedoes.some((torpedo) => {
+      if (Number(torpedo.remainingFuel) <= 0) {
+        return false;
+      }
+
+      const effectStartRow =
+        Number(torpedo.position.row) +
+        Number(torpedo.velocity.row) -
+        TORPEDO_ACCEL;
+      const effectEndRow =
+        Number(torpedo.position.row) +
+        Number(torpedo.velocity.row) +
+        TORPEDO_ACCEL;
+      const effectStartCol =
+        Number(torpedo.position.col) +
+        Number(torpedo.velocity.col) -
+        TORPEDO_ACCEL;
+      const effectEndCol =
+        Number(torpedo.position.col) +
+        Number(torpedo.velocity.col) +
+        TORPEDO_ACCEL;
+
+      return (
+        row >= effectStartRow &&
+        row <= effectEndRow &&
+        col >= effectStartCol &&
+        col <= effectEndCol
+      );
+    });
   };
 
   const getCurrentPlayerShip = (): Ship | undefined => {
@@ -345,6 +385,22 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
                   hoveredMine?.color === "red"
                     ? darkRedSquareStyle
                     : darkBlueSquareStyle;
+              } else if (
+                isSquareWithinTorpedoEffectRange(
+                  currentRow,
+                  currentCol,
+                  game?.player1Ship?.torpedoes
+                )
+              ) {
+                squareStyle = { ...squareStyle, border: "1px dashed red" }; // apply the desired style
+              } else if (
+                isSquareWithinTorpedoEffectRange(
+                  currentRow,
+                  currentCol,
+                  game?.player2Ship?.torpedoes
+                )
+              ) {
+                squareStyle = { ...squareStyle, border: "1px dashed blue" }; // apply the desired style
               }
 
               return (

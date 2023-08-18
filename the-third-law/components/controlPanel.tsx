@@ -70,8 +70,6 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
     deploy: "none",
   });
 
-  const [waitingForUpdate, setWaitingForUpdate] = useState(false);
-
   const {
     data: actionData,
     isError: isActionError,
@@ -92,22 +90,18 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
 
   useEffect(() => {
     if (actionReceiptData) {
-      resetAction();
-      // Resetting for the next action (if required)
-      setAction({
-        vertical: "none",
-        horizontal: "none",
-        deploy: "none",
-      });
-      setWaitingForUpdate(true);
+      // Wait 4 seconds before calling resetAction and resetting the action
+      setTimeout(() => {
+        resetAction();
+        // Resetting for the next action (if required)
+        setAction({
+          vertical: "none",
+          horizontal: "none",
+          deploy: "none",
+        });
+      }, 4000);
     }
   }, [actionReceiptData, resetAction]);
-
-  useEffect(() => {
-    if (!localPlayerTurn && game.status === Status.Active) {
-      setWaitingForUpdate(false);
-    }
-  }, [localPlayerTurn, game]);
 
   if (localPlayerTurn && isActionReceiptLoading) {
     return (
@@ -117,7 +111,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
     );
   }
 
-  if (waitingForUpdate || (!localPlayerTurn && game.status === Status.Active)) {
+  if (!localPlayerTurn && game.status === Status.Active) {
     return (
       <div>
         <h2>Waiting for Opponent</h2>

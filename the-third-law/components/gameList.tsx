@@ -139,7 +139,7 @@ const GameList: React.FC<GameListProps> = ({ setGameId, setActiveTab }) => {
     args: [useAccount()?.address],
     watch: true,
     onSettled(data, error) {
-      setGames(data as Game[]);
+      setGames((data as Game[]).slice().reverse());
     },
   });
 
