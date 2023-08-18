@@ -289,11 +289,10 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
           </div>
         ))}
       </div>
-      {game && game.currentPlayer === address && (
+      {game && (
         <ControlPanel
           game={game}
           ship={getCurrentPlayerShip()} // Assuming it's player1's turn. Adjust accordingly.
-          isCurrentPlayer={true} // Adjust based on your game logic
           onAction={(action) => {
             // Handle the player's action here
           }}

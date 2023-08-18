@@ -4,6 +4,7 @@ import styles from "../styles/Home.module.css";
 import { useState } from "react";
 import GameList from "../components/gameList";
 import GameBoard from "../components/gameBoard";
+import GameDescription from "../components/gameDescription";
 
 const Home: NextPage = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -36,7 +37,7 @@ const Home: NextPage = () => {
         )}
         {activeTab === 1 && <div>Content for Tab 2</div>}
         {activeTab === 2 && <GameBoard gameId={gameId} setGameId={setGameId} />}
-        {activeTab === 3 && <div>TODO</div>}
+        {activeTab === 3 && <GameDescription />}
       </main>
     </div>
   );

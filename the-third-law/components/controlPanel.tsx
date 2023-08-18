@@ -48,7 +48,6 @@ export const statusToString = (status: Status): string => {
 interface ControlPanelProps {
   game: Game;
   ship?: Ship;
-  isCurrentPlayer: boolean;
   onAction: (action: PlayerAction) => void;
 }
 
@@ -61,7 +60,6 @@ interface PlayerAction {
 const ControlPanel: React.FC<ControlPanelProps> = ({
   game,
   ship,
-  isCurrentPlayer,
   onAction,
 }) => {
   const [action, setAction] = useState<PlayerAction>({
@@ -82,9 +80,12 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
     functionName: "takeTurn",
   });
 
-  // if (!isCurrentPlayer && game.status === Status.Active) {
-  //   return null;
-  // }
+  if (
+    ship?.ownerAddress != game.currentPlayer &&
+    game.status === Status.Active
+  ) {
+    return null;
+  }
 
   if (game.status !== Status.Active) {
     return (
