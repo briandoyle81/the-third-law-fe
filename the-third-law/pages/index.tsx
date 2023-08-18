@@ -36,7 +36,7 @@ const Home: NextPage = () => {
         )}
         {activeTab === 1 && <div>Content for Tab 2</div>}
         {activeTab === 2 && <GameBoard gameId={gameId} setGameId={setGameId} />}
-        {activeTab === 3 && <div>Content for Tab 4</div>}
+        {activeTab === 3 && <div>TODO</div>}
       </main>
     </div>
   );
