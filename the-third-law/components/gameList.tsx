@@ -138,8 +138,6 @@ const GameList: React.FC<GameListProps> = ({ setGameId, setActiveTab }) => {
     args: [useAccount()?.address],
     watch: true,
     onSettled(data, error) {
-      console.log("player", player);
-      console.log("data", data);
       setGames(data as Game[]);
     },
   });
@@ -190,16 +188,19 @@ const GameList: React.FC<GameListProps> = ({ setGameId, setActiveTab }) => {
     );
   }
 
-  function renderJoinButton(gameId: BigInt) {
-    if (!player || !player.inviteIds || !player.inviteIds.includes(gameId)) {
+  function renderJoinButton(game: Game) {
+    if (!player || !player.inviteIds || !player.inviteIds.includes(game.id)) {
+      return null;
+    }
+    if (game.status !== Status.NotStarted) {
       return null;
     }
     return (
       <div>
-        <button onClick={() => handleRejectButtonClick(gameId)}>
+        <button onClick={() => handleRejectButtonClick(game.id)}>
           Reject Invite
         </button>
-        <button onClick={() => handleAcceptButtonClick(gameId)}>
+        <button onClick={() => handleAcceptButtonClick(game.id)}>
           Accept Invite
         </button>
       </div>
@@ -246,7 +247,7 @@ const GameList: React.FC<GameListProps> = ({ setGameId, setActiveTab }) => {
                   <div>Value: {game.value.toString()}</div>
                   <div>Status: {Status[game.status]}</div>
                   <div>Current Player: {game.currentPlayer}</div>
-                  {renderJoinButton(game.id)}
+                  {renderJoinButton(game)}
                   {renderGoToGameButton(game)}
                   <hr />
                 </li>

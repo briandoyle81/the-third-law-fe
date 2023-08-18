@@ -47,7 +47,7 @@ export const statusToString = (status: Status): string => {
 
 interface ControlPanelProps {
   game: Game;
-  ship: Ship;
+  ship?: Ship;
   isCurrentPlayer: boolean;
   onAction: (action: PlayerAction) => void;
 }
@@ -118,9 +118,25 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
     });
   };
 
+  function getColor() {
+    if (ship.ownerAddress === game.player1Address) {
+      return "red";
+    } else if (ship.ownerAddress === game.player2Address) {
+      return "blue";
+    } else {
+      return "black";
+    }
+  }
+
   return (
     <div>
-      <h2>Control Panel</h2>
+      <h2
+        style={{
+          color: getColor(),
+        }}
+      >
+        Control Panel
+      </h2>
 
       <h3>Acceleration</h3>
       <select

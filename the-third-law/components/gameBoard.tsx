@@ -8,18 +8,18 @@ import { useIsMounted } from "../utils/useIsMounted";
 
 import ControlPanel from "./controlPanel";
 
-const BOARD_SIZE = 101;
-const START_INDEX = -50;
-const END_INDEX = 50;
-const ASTEROID_SIZE = 20;
+const BOARD_SIZE = 41;
+const START_INDEX = -20;
+const END_INDEX = 20;
+const ASTEROID_SIZE = 10;
 
 const containerStyle: React.CSSProperties = {
   display: "flex",
 };
 
 const blackSquareStyle: React.CSSProperties = {
-  width: "10px",
-  height: "10px",
+  width: "20px",
+  height: "20px",
   // border: "1px solid white",
   backgroundColor: "black",
   display: "inline-block",
@@ -173,6 +173,20 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
     );
   };
 
+  const getCurrentPlayerShip = (): Ship | undefined => {
+    if (!game) {
+      return undefined;
+    }
+
+    if (game.currentPlayer === game.player1Address) {
+      return game.player1Ship;
+    } else if (game.currentPlayer === game.player2Address) {
+      return game.player2Ship;
+    } else {
+      return undefined;
+    }
+  };
+
   return (
     <div style={containerStyle}>
       <div>
@@ -278,7 +292,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
       {game && game.currentPlayer === address && (
         <ControlPanel
           game={game}
-          ship={game?.player1Ship} // Assuming it's player1's turn. Adjust accordingly.
+          ship={getCurrentPlayerShip()} // Assuming it's player1's turn. Adjust accordingly.
           isCurrentPlayer={true} // Adjust based on your game logic
           onAction={(action) => {
             // Handle the player's action here
