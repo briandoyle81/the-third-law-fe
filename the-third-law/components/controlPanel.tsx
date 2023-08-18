@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Game, Ship } from "./gameList";
 
-import { useContractWrite } from "wagmi";
+import { useAccount, useContractWrite, useWaitForTransaction } from "wagmi";
 
 import TheThirdLaw from "../deployments/TheThirdLaw.json";
 
@@ -48,6 +48,7 @@ export const statusToString = (status: Status): string => {
 interface ControlPanelProps {
   game: Game;
   ship?: Ship;
+  localPlayerTurn: boolean;
   onAction: (action: PlayerAction) => void;
 }
 
@@ -60,6 +61,7 @@ interface PlayerAction {
 const ControlPanel: React.FC<ControlPanelProps> = ({
   game,
   ship,
+  localPlayerTurn,
   onAction,
 }) => {
   const [action, setAction] = useState<PlayerAction>({
@@ -74,17 +76,44 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
     isLoading: isActionLoading,
     isSuccess: isActionSuccess,
     write: takeTurn,
+    reset: resetAction,
   } = useContractWrite({
     address: TheThirdLaw.address as `0x${string}`,
     abi: TheThirdLaw.abi,
     functionName: "takeTurn",
   });
 
-  if (
-    ship?.ownerAddress != game.currentPlayer &&
-    game.status === Status.Active
-  ) {
-    return null;
+  const { data: actionReceiptData, isLoading: isActionReceiptLoading } =
+    useWaitForTransaction({
+      hash: actionData?.hash,
+    });
+
+  useEffect(() => {
+    if (actionReceiptData) {
+      resetAction();
+    }
+  }, [actionReceiptData, resetAction]);
+
+  if (localPlayerTurn && isActionReceiptLoading) {
+    // Resetting for the next action (if required)
+    setAction({
+      vertical: "none",
+      horizontal: "none",
+      deploy: "none",
+    });
+    return (
+      <div>
+        <h2>Processing Command</h2>
+      </div>
+    );
+  }
+
+  if (!localPlayerTurn && game.status === Status.Active) {
+    return (
+      <div>
+        <h2>Waiting for Opponent</h2>
+      </div>
+    );
   }
 
   if (game.status !== Status.Active) {
@@ -110,12 +139,6 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
         action.vertical === "up" ? 1 : action.vertical === "down" ? 2 : 0,
         action.deploy === "mine" ? 2 : action.deploy === "torpedo" ? 1 : 0,
       ],
-    });
-    // Resetting for the next action (if required)
-    setAction({
-      vertical: "none",
-      horizontal: "none",
-      deploy: "none",
     });
   };
 

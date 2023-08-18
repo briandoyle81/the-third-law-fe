@@ -45,6 +45,7 @@ export type Torpedo = {
 
 export type Mine = {
   position: Vector2;
+  color?: string;
 };
 
 export type Ship = {

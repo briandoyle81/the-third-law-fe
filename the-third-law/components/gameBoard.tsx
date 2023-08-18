@@ -8,10 +8,13 @@ import { useIsMounted } from "../utils/useIsMounted";
 
 import ControlPanel from "./controlPanel";
 
+// TODO: Get these from the contract
 const BOARD_SIZE = 41;
 const START_INDEX = -20;
 const END_INDEX = 20;
 const ASTEROID_SIZE = 10;
+const MINE_RANGE = 2;
+const TORPEDO_ACCEL = 3;
 
 const containerStyle: React.CSSProperties = {
   display: "flex",
@@ -55,6 +58,16 @@ const mineStyle: React.CSSProperties = {
   borderRadius: "50%", // Makes the square a circle
 };
 
+const darkRedSquareStyle: React.CSSProperties = {
+  ...blackSquareStyle,
+  backgroundColor: "darkred",
+};
+
+const darkBlueSquareStyle: React.CSSProperties = {
+  ...blackSquareStyle,
+  backgroundColor: "darkblue",
+};
+
 const torpedoStyle: React.CSSProperties = {
   ...blackSquareStyle,
   clipPath: "polygon(50% 0%, 0% 100%, 100% 100%)", // Makes the square a triangle
@@ -86,6 +99,7 @@ interface GameBoardProps {
 
 const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
   const [game, setGame] = React.useState<Game>();
+  const [hoveredMine, setHoveredMine] = React.useState<Mine | null>(null);
 
   const { address } = useAccount();
 
@@ -173,6 +187,22 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
     );
   };
 
+  const isSquareWithinMineEffectRange = (
+    row: number,
+    col: number,
+    mine: Mine | null
+  ): boolean => {
+    return !!(
+      mine &&
+      manhattanDistance(
+        row,
+        col,
+        Number(mine.position.row),
+        Number(mine.position.col)
+      ) <= MINE_RANGE
+    );
+  };
+
   const getCurrentPlayerShip = (): Ship | undefined => {
     if (!game) {
       return undefined;
@@ -232,6 +262,22 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
                 )
               ) {
                 squareStyle = { ...mineStyle, backgroundColor: "red" };
+                return (
+                  <div
+                    key={colIndex}
+                    style={squareStyle}
+                    onMouseEnter={() =>
+                      setHoveredMine({
+                        position: {
+                          row: BigInt(currentRow),
+                          col: BigInt(currentCol),
+                        },
+                        color: "red",
+                      })
+                    }
+                    onMouseLeave={() => setHoveredMine(null)}
+                  />
+                );
               } else if (
                 isSquareMinePosition(
                   currentRow,
@@ -240,6 +286,22 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
                 )
               ) {
                 squareStyle = { ...mineStyle, backgroundColor: "blue" };
+                return (
+                  <div
+                    key={colIndex}
+                    style={squareStyle}
+                    onMouseEnter={() =>
+                      setHoveredMine({
+                        position: {
+                          row: BigInt(currentRow),
+                          col: BigInt(currentCol),
+                        },
+                        color: "blue",
+                      })
+                    }
+                    onMouseLeave={() => setHoveredMine(null)}
+                  />
+                );
               } else if (
                 isSquareTorpedoPosition(
                   currentRow,
@@ -256,9 +318,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
                 )
               ) {
                 squareStyle = { ...torpedoStyle, backgroundColor: "blue" };
-              }
-              // Check for torpedo's next position for player 1
-              else if (
+              } else if (
                 isSquareTorpedoNextPosition(
                   currentRow,
                   currentCol,
@@ -266,9 +326,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
                 )
               ) {
                 squareStyle = getOutlinedTorpedoStyle("red");
-              }
-              // Check for torpedo's next position for player 2
-              else if (
+              } else if (
                 isSquareTorpedoNextPosition(
                   currentRow,
                   currentCol,
@@ -276,6 +334,17 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
                 )
               ) {
                 squareStyle = getOutlinedTorpedoStyle("blue");
+              } else if (
+                isSquareWithinMineEffectRange(
+                  currentRow,
+                  currentCol,
+                  hoveredMine
+                )
+              ) {
+                squareStyle =
+                  hoveredMine?.color === "red"
+                    ? darkRedSquareStyle
+                    : darkBlueSquareStyle;
               }
 
               return (
@@ -292,7 +361,8 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
       {game && (
         <ControlPanel
           game={game}
-          ship={getCurrentPlayerShip()} // Assuming it's player1's turn. Adjust accordingly.
+          ship={getCurrentPlayerShip()}
+          localPlayerTurn={game.currentPlayer === address}
           onAction={(action) => {
             // Handle the player's action here
           }}
