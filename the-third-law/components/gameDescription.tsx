@@ -35,7 +35,7 @@ const GameDescription: React.FC = () => {
         accomplish your goal in one of three ways.
       </p>
       <ul>
-        <li>Hit them with a torpedo 🔺</li>
+        <li>Hit them with a torpedo 🔷</li>
         <li>Lure them into a mine 🔵</li>
         <li>Cause enough panic they crash into the asteroid</li>
       </ul>

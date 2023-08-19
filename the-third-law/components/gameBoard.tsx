@@ -1,7 +1,25 @@
-// components/GameBoard.tsx
 import React from "react";
 import { Game, Mine, Ship, Torpedo } from "./gameList";
 import { useAccount, useContractRead } from "wagmi";
+
+import {
+  containerStyle,
+  blackSquareStyle,
+  graySquareStyle,
+  player1ShipStyle,
+  player2ShipStyle,
+  outlinedPlayer1ShipStyle,
+  outlinedPlayer2ShipStyle,
+  mineStyle,
+  darkRedSquareStyle,
+  darkBlueSquareStyle,
+  torpedoStyle,
+  rowStyle,
+  getOutlinedTorpedoStyle,
+  blinkingTorpedoStyle,
+  blinkingOutlineStyle,
+  blinkKeyframes,
+} from "../styles/boardStyles";
 
 import TheThirdLaw from "../deployments/TheThirdLaw.json";
 import { useIsMounted } from "../utils/useIsMounted";
@@ -16,72 +34,13 @@ const ASTEROID_SIZE = 10;
 const MINE_RANGE = 2;
 const TORPEDO_ACCEL = 1;
 
-const containerStyle: React.CSSProperties = {
-  display: "flex",
+const BlinkingTorpedoStyle: React.FC = () => {
+  return <style>{blinkKeyframes}</style>;
 };
 
-const blackSquareStyle: React.CSSProperties = {
-  width: "20px",
-  height: "20px",
-  // border: "1px solid white",
-  backgroundColor: "black",
-  display: "inline-block",
+const BlinkingOutlineStyle: React.FC = () => {
+  return <style>{blinkKeyframes}</style>;
 };
-
-const graySquareStyle: React.CSSProperties = {
-  ...blackSquareStyle,
-  backgroundColor: "gray",
-};
-
-const player1ShipStyle: React.CSSProperties = {
-  ...blackSquareStyle,
-  backgroundColor: "red",
-};
-
-const player2ShipStyle: React.CSSProperties = {
-  ...blackSquareStyle,
-  backgroundColor: "blue",
-};
-
-const outlinedPlayer1ShipStyle: React.CSSProperties = {
-  ...blackSquareStyle,
-  border: "1px solid red",
-};
-
-const outlinedPlayer2ShipStyle: React.CSSProperties = {
-  ...blackSquareStyle,
-  border: "1px solid blue",
-};
-
-const mineStyle: React.CSSProperties = {
-  ...blackSquareStyle,
-  borderRadius: "50%", // Makes the square a circle
-};
-
-const darkRedSquareStyle: React.CSSProperties = {
-  ...blackSquareStyle,
-  backgroundColor: "darkred",
-};
-
-const darkBlueSquareStyle: React.CSSProperties = {
-  ...blackSquareStyle,
-  backgroundColor: "darkblue",
-};
-
-const torpedoStyle: React.CSSProperties = {
-  ...blackSquareStyle,
-  clipPath: "polygon(50% 0%, 0% 50%, 50% 100%, 100% 50%)", // Makes the square a diamond
-};
-
-const rowStyle: React.CSSProperties = {
-  display: "flex",
-};
-
-const getOutlinedTorpedoStyle = (color: string): React.CSSProperties => ({
-  ...blackSquareStyle,
-  clipPath: "polygon(50% 0%, 0% 50%, 50% 100%, 100% 50%)", // Makes the shape a diamond
-  border: `4px solid ${color}`,
-});
 
 const manhattanDistance = (
   x1: number,
@@ -96,35 +55,6 @@ interface GameBoardProps {
   gameId: BigInt;
   setGameId: Function;
 }
-
-// Const move this when decomposing this component
-const blinkingTorpedoStyle: React.CSSProperties = {
-  ...torpedoStyle,
-  animation: "blink 1s linear infinite",
-  // ... other styles you want
-};
-
-const blinkingOutlineStyle: React.CSSProperties = {
-  ...blackSquareStyle,
-  animation: "blink 1s linear infinite",
-  // ... other styles you want
-};
-
-const blinkKeyframes = `
-@keyframes blink {
-  0% {opacity: 1;}
-  50% {opacity: 0.5;}
-  100% {opacity: 1;}
-}
-`;
-
-const BlinkingTorpedoStyle: React.FC = () => {
-  return <style>{blinkKeyframes}</style>;
-};
-
-const BlinkingOutlineStyle: React.FC = () => {
-  return <style>{blinkKeyframes}</style>;
-};
 
 const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
   const [game, setGame] = React.useState<Game>();
