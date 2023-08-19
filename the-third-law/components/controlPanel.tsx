@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Game, Ship } from "./gameList";
+import { Game, Ship, Vector2 } from "./gameList";
 
 import { useAccount, useContractWrite, useWaitForTransaction } from "wagmi";
 
@@ -49,6 +49,9 @@ interface ControlPanelProps {
   game: Game;
   ship?: Ship;
   localPlayerTurn: boolean;
+  localPlayerAddress: string;
+  input: Vector2;
+  setInput: Function;
   onAction: (action: PlayerAction) => void;
 }
 
@@ -62,12 +65,19 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   game,
   ship,
   localPlayerTurn,
+  localPlayerAddress,
+  input,
+  setInput,
   onAction,
 }) => {
   const [action, setAction] = useState<PlayerAction>({
     vertical: "none",
     horizontal: "none",
     deploy: "none",
+  });
+  const [newInput, setNewInput] = useState<Vector2>({
+    row: BigInt(0),
+    col: BigInt(0),
   });
 
   const {
@@ -106,7 +116,13 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   if (localPlayerTurn && isActionReceiptLoading) {
     return (
       <div>
-        <h2>Processing Command</h2>
+        <h2
+          style={{
+            color: getColor(),
+          }}
+        >
+          Processing Command
+        </h2>
       </div>
     );
   }
@@ -114,7 +130,13 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   if (!localPlayerTurn && game.status === Status.Active) {
     return (
       <div>
-        <h2>Waiting for Opponent</h2>
+        <h2
+          style={{
+            color: getColor(),
+          }}
+        >
+          Waiting for Opponent
+        </h2>
       </div>
     );
   }
@@ -148,9 +170,9 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   function getColor() {
     if (!ship) {
       return "black";
-    } else if (ship.ownerAddress === game.player1Address) {
+    } else if (localPlayerAddress === game.player1Address) {
       return "red";
-    } else if (ship.ownerAddress === game.player2Address) {
+    } else if (localPlayerAddress === game.player2Address) {
       return "blue";
     } else {
       return "black";
@@ -170,12 +192,23 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
       <h3>Acceleration</h3>
       <select
         value={action.vertical}
-        onChange={(e) =>
+        onChange={(e) => {
+          const direction = e.target.value as "up" | "down" | "none";
+          let updatedInput;
+          if (direction === "up") {
+            updatedInput = { row: BigInt(-1), col: newInput.col };
+          } else if (direction === "down") {
+            updatedInput = { row: BigInt(1), col: newInput.col };
+          } else {
+            updatedInput = { row: BigInt(0), col: newInput.col };
+          }
+          setNewInput(updatedInput); // Update newInput state
+          setInput(updatedInput); // Directly use the updated value
           setAction((prev) => ({
             ...prev,
-            vertical: e.target.value as "up" | "down" | "none",
-          }))
-        }
+            vertical: direction,
+          }));
+        }}
       >
         <option value="none">No Change</option>
         <option value="up">Up</option>
@@ -184,12 +217,23 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
 
       <select
         value={action.horizontal}
-        onChange={(e) =>
+        onChange={(e) => {
+          const direction = e.target.value as "left" | "right" | "none";
+          let updatedInput;
+          if (direction === "left") {
+            updatedInput = { row: newInput.row, col: BigInt(-1) };
+          } else if (direction === "right") {
+            updatedInput = { row: newInput.row, col: BigInt(1) };
+          } else {
+            updatedInput = { row: newInput.row, col: BigInt(0) };
+          }
+          setNewInput(updatedInput); // Update newInput state
+          setInput(updatedInput); // Directly use the updated value
           setAction((prev) => ({
             ...prev,
-            horizontal: e.target.value as "left" | "right" | "none",
-          }))
-        }
+            horizontal: direction,
+          }));
+        }}
       >
         <option value="none">No Change</option>
         <option value="left">Left</option>

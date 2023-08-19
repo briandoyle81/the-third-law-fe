@@ -1,5 +1,5 @@
 import React from "react";
-import { Game, Mine, Ship, Torpedo } from "./gameList";
+import { Game, Mine, Ship, Torpedo, Vector2 } from "./gameList";
 import { useAccount, useContractRead } from "wagmi";
 
 import {
@@ -59,6 +59,10 @@ interface GameBoardProps {
 const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
   const [game, setGame] = React.useState<Game>();
   const [hoveredMine, setHoveredMine] = React.useState<Mine | null>(null);
+  const [input, setInput] = React.useState<Vector2>({
+    row: BigInt(0),
+    col: BigInt(0),
+  });
 
   const { address } = useAccount();
 
@@ -97,8 +101,14 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
   ): boolean => {
     return (
       !!ship &&
-      Number(ship.position.row) + Number(ship.velocity.row) === row &&
-      Number(ship.position.col) + Number(ship.velocity.col) === col
+      Number(ship.position.row) +
+        Number(ship.velocity.row) +
+        Number(input.row) ===
+        row &&
+      Number(ship.position.col) +
+        Number(ship.velocity.col) +
+        Number(input.col) ===
+        col
     );
   };
 
@@ -515,6 +525,9 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
           game={game}
           ship={getCurrentPlayerShip()}
           localPlayerTurn={game.currentPlayer === address}
+          localPlayerAddress={address as string}
+          input={input}
+          setInput={setInput}
           onAction={(action) => {
             // Handle the player's action here
           }}
