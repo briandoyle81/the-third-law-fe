@@ -13,7 +13,7 @@ const Home: NextPage = () => {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1>The Third Law</h1>
+        <h1>The Third Law - Testnet</h1>
         <ConnectButton />
       </header>
 
