@@ -70,7 +70,7 @@ const darkBlueSquareStyle: React.CSSProperties = {
 
 const torpedoStyle: React.CSSProperties = {
   ...blackSquareStyle,
-  clipPath: "polygon(50% 0%, 0% 100%, 100% 100%)", // Makes the square a triangle
+  clipPath: "polygon(50% 0%, 0% 50%, 50% 100%, 100% 50%)", // Makes the square a diamond
 };
 
 const rowStyle: React.CSSProperties = {
@@ -79,8 +79,8 @@ const rowStyle: React.CSSProperties = {
 
 const getOutlinedTorpedoStyle = (color: string): React.CSSProperties => ({
   ...blackSquareStyle,
-  clipPath: "polygon(50% 0%, 0% 100%, 100% 100%)",
-  border: `1px solid ${color}`,
+  clipPath: "polygon(50% 0%, 0% 50%, 50% 100%, 100% 50%)", // Makes the shape a diamond
+  border: `4px solid ${color}`,
 });
 
 const manhattanDistance = (
@@ -96,6 +96,35 @@ interface GameBoardProps {
   gameId: BigInt;
   setGameId: Function;
 }
+
+// Const move this when decomposing this component
+const blinkingTorpedoStyle: React.CSSProperties = {
+  ...torpedoStyle,
+  animation: "blink 1s linear infinite",
+  // ... other styles you want
+};
+
+const blinkingOutlineStyle: React.CSSProperties = {
+  ...blackSquareStyle,
+  animation: "blink 1s linear infinite",
+  // ... other styles you want
+};
+
+const blinkKeyframes = `
+@keyframes blink {
+  0% {opacity: 1;}
+  50% {opacity: 0.5;}
+  100% {opacity: 1;}
+}
+`;
+
+const BlinkingTorpedoStyle: React.FC = () => {
+  return <style>{blinkKeyframes}</style>;
+};
+
+const BlinkingOutlineStyle: React.FC = () => {
+  return <style>{blinkKeyframes}</style>;
+};
 
 const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
   const [game, setGame] = React.useState<Game>();
@@ -173,6 +202,26 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
     );
   };
 
+  const isSquareTorpedoHittingShip = (
+    row: number,
+    col: number,
+    torpedoes: Torpedo[] | undefined,
+    ship: Ship | undefined
+  ): boolean => {
+    return (
+      !!torpedoes &&
+      !!ship &&
+      torpedoes.some(
+        (torpedo) =>
+          Number(torpedo.position.row) === row &&
+          Number(torpedo.position.col) === col &&
+          Number(torpedo.remainingFuel) > 0 &&
+          Number(ship.position.row) === row &&
+          Number(ship.position.col) === col
+      )
+    );
+  };
+
   const isSquareTorpedoNextPosition = (
     row: number,
     col: number,
@@ -243,6 +292,41 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
     });
   };
 
+  const isTorpedoEffectSquareInRangeOfShip = (
+    row: number,
+    col: number,
+    ship: Ship | undefined
+  ): boolean => {
+    if (!ship) return false;
+
+    const effectStartRow = Number(ship.position.row) - TORPEDO_ACCEL;
+    const effectEndRow = Number(ship.position.row) + TORPEDO_ACCEL;
+    const effectStartCol = Number(ship.position.col) - TORPEDO_ACCEL;
+    const effectEndCol = Number(ship.position.col) + TORPEDO_ACCEL;
+
+    return (
+      row >= effectStartRow &&
+      row <= effectEndRow &&
+      col >= effectStartCol &&
+      col <= effectEndCol
+    );
+  };
+
+  const willTorpedoHitOrBeCloseToShip = (
+    torpedo: Torpedo,
+    enemyShipPosition: { row: number; col: number }
+  ): boolean => {
+    const nextTorpedoRow =
+      Number(torpedo.position.row) + Number(torpedo.velocity.row);
+    const nextTorpedoCol =
+      Number(torpedo.position.col) + Number(torpedo.velocity.col);
+
+    return (
+      Math.abs(nextTorpedoRow - enemyShipPosition.row) <= TORPEDO_ACCEL &&
+      Math.abs(nextTorpedoCol - enemyShipPosition.col) <= TORPEDO_ACCEL
+    );
+  };
+
   const getCurrentPlayerShip = (): Ship | undefined => {
     if (!game) {
       return undefined;
@@ -259,10 +343,31 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
 
   return (
     <div style={containerStyle}>
+      <BlinkingTorpedoStyle />
+      <BlinkingOutlineStyle />
       <div>
         {[...Array(BOARD_SIZE)].map((_, rowIndex) => (
           <div key={rowIndex} style={rowStyle}>
             {[...Array(BOARD_SIZE)].map((_, colIndex) => {
+              let backgroundSquareStyle = blackSquareStyle;
+              // Determine if it's an enemy torpedo that is close to or on top of our ship
+              // TODO: This should probably be renamed to close to 1 or 2
+              const enemyTorpedoCloseToUs = game?.player1Ship?.torpedoes?.some(
+                (torpedo) =>
+                  willTorpedoHitOrBeCloseToShip(torpedo, {
+                    row: Number(game?.player2Ship?.position.row),
+                    col: Number(game?.player2Ship?.position.col),
+                  })
+              );
+
+              const ourTorpedoCloseToEnemy = game?.player2Ship?.torpedoes?.some(
+                (torpedo) =>
+                  willTorpedoHitOrBeCloseToShip(torpedo, {
+                    row: Number(game?.player1Ship?.position.row),
+                    col: Number(game?.player1Ship?.position.col),
+                  })
+              );
+
               const currentRow = START_INDEX + rowIndex;
               const currentCol = START_INDEX + colIndex;
               const distance = manhattanDistance(currentRow, currentCol);
@@ -273,11 +378,61 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
               if (
                 isSquareShipPosition(currentRow, currentCol, game?.player1Ship)
               ) {
-                squareStyle = player1ShipStyle;
+                if (
+                  isSquareTorpedoHittingShip(
+                    currentRow,
+                    currentCol,
+                    game?.player2Ship?.torpedoes,
+                    game?.player1Ship
+                  )
+                ) {
+                  backgroundSquareStyle = player1ShipStyle;
+                  squareStyle = {
+                    ...torpedoStyle,
+                    backgroundColor: "blue",
+                  };
+                } else {
+                  squareStyle = player1ShipStyle;
+                }
               } else if (
                 isSquareShipPosition(currentRow, currentCol, game?.player2Ship)
               ) {
-                squareStyle = player2ShipStyle;
+                if (
+                  isSquareTorpedoHittingShip(
+                    currentRow,
+                    currentCol,
+                    game?.player1Ship?.torpedoes,
+                    game?.player2Ship
+                  )
+                ) {
+                  backgroundSquareStyle = player2ShipStyle;
+                  squareStyle = {
+                    ...torpedoStyle,
+                    backgroundColor: "red",
+                  };
+                } else {
+                  squareStyle = player2ShipStyle;
+                }
+              } else if (
+                isSquareTorpedoPosition(
+                  currentRow,
+                  currentCol,
+                  game?.player1Ship?.torpedoes
+                )
+              ) {
+                squareStyle = enemyTorpedoCloseToUs
+                  ? { ...blinkingTorpedoStyle, backgroundColor: "red" }
+                  : { ...torpedoStyle, backgroundColor: "red" };
+              } else if (
+                isSquareTorpedoPosition(
+                  currentRow,
+                  currentCol,
+                  game?.player2Ship?.torpedoes
+                )
+              ) {
+                squareStyle = ourTorpedoCloseToEnemy
+                  ? { ...blinkingTorpedoStyle, backgroundColor: "blue" }
+                  : { ...torpedoStyle, backgroundColor: "blue" };
               } else if (
                 isSquareShipNextPosition(
                   currentRow,
@@ -343,22 +498,6 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
                   />
                 );
               } else if (
-                isSquareTorpedoPosition(
-                  currentRow,
-                  currentCol,
-                  game?.player1Ship?.torpedoes
-                )
-              ) {
-                squareStyle = { ...torpedoStyle, backgroundColor: "red" };
-              } else if (
-                isSquareTorpedoPosition(
-                  currentRow,
-                  currentCol,
-                  game?.player2Ship?.torpedoes
-                )
-              ) {
-                squareStyle = { ...torpedoStyle, backgroundColor: "blue" };
-              } else if (
                 isSquareTorpedoNextPosition(
                   currentRow,
                   currentCol,
@@ -392,7 +531,20 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
                   game?.player1Ship?.torpedoes
                 )
               ) {
-                squareStyle = { ...squareStyle, border: "1px dashed red" }; // apply the desired style
+                if (
+                  isTorpedoEffectSquareInRangeOfShip(
+                    currentRow,
+                    currentCol,
+                    game?.player2Ship
+                  )
+                ) {
+                  squareStyle = {
+                    ...blinkingOutlineStyle,
+                    border: "1px dashed red",
+                  }; // apply the desired style
+                } else {
+                  squareStyle = { ...squareStyle, border: "1px dashed red" }; // apply the desired style
+                }
               } else if (
                 isSquareWithinTorpedoEffectRange(
                   currentRow,
@@ -400,15 +552,29 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
                   game?.player2Ship?.torpedoes
                 )
               ) {
-                squareStyle = { ...squareStyle, border: "1px dashed blue" }; // apply the desired style
+                if (
+                  isTorpedoEffectSquareInRangeOfShip(
+                    currentRow,
+                    currentCol,
+                    game?.player2Ship
+                  )
+                ) {
+                  squareStyle = {
+                    ...blinkingOutlineStyle,
+                    border: "1px dashed blue",
+                  }; // apply the desired style
+                } else {
+                  squareStyle = { ...squareStyle, border: "1px dashed blue" }; // apply the desired style
+                }
               }
 
               return (
-                <div
-                  key={colIndex}
-                  style={squareStyle}
-                  title={`Row: ${currentRow}, Col: ${currentCol}, Distance: ${distance}`}
-                />
+                <div key={colIndex} style={backgroundSquareStyle}>
+                  <div
+                    style={squareStyle}
+                    title={`Row: ${currentRow}, Col: ${currentCol}, Distance: ${distance}`}
+                  />
+                </div>
               );
             })}
           </div>
