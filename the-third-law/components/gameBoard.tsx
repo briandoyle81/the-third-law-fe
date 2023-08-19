@@ -99,17 +99,25 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
     col: number,
     ship: Ship | undefined
   ): boolean => {
-    return (
-      !!ship &&
-      Number(ship.position.row) +
-        Number(ship.velocity.row) +
-        Number(input.row) ===
-        row &&
-      Number(ship.position.col) +
-        Number(ship.velocity.col) +
-        Number(input.col) ===
-        col
-    );
+    if (ship?.ownerAddress === address) {
+      return (
+        !!ship &&
+        Number(ship.position.row) +
+          Number(ship.velocity.row) +
+          Number(input.row) ===
+          row &&
+        Number(ship.position.col) +
+          Number(ship.velocity.col) +
+          Number(input.col) ===
+          col
+      );
+    } else {
+      return (
+        !!ship &&
+        Number(ship.position.row) + Number(ship.velocity.row) === row &&
+        Number(ship.position.col) + Number(ship.velocity.col) === col
+      );
+    }
   };
 
   const isSquareMinePosition = (

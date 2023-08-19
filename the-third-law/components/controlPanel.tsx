@@ -151,6 +151,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   }
 
   const handleActionSubmit = () => {
+    setNewInput({ row: BigInt(0), col: BigInt(0) }); // Reset newInput state
     onAction(action);
 
     takeTurn({
