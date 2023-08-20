@@ -244,35 +244,49 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
       </select>
 
       <h3>Deploy</h3>
-      <label>
-        <input
-          type="radio"
-          value="none"
-          checked={action.deploy === "none"}
-          onChange={() => setAction((prev) => ({ ...prev, deploy: "none" }))}
-        />
-        None
-      </label>
-      <label>
-        <input
-          type="radio"
-          value="mine"
-          disabled={Number(ship?.remainingMines) <= 0}
-          checked={action.deploy === "mine"}
-          onChange={() => setAction((prev) => ({ ...prev, deploy: "mine" }))}
-        />
-        Deploy Mine
-      </label>
-      <label>
-        <input
-          type="radio"
-          value="torpedo"
-          disabled={Number(ship?.remainingTorpedoes) <= 0}
-          checked={action.deploy === "torpedo"}
-          onChange={() => setAction((prev) => ({ ...prev, deploy: "torpedo" }))}
-        />
-        Deploy Torpedo
-      </label>
+      <ul style={{ listStyleType: "none", padding: 0 }}>
+        <li>
+          <label>
+            <input
+              type="radio"
+              value="none"
+              checked={action.deploy === "none"}
+              onChange={() =>
+                setAction((prev) => ({ ...prev, deploy: "none" }))
+              }
+            />
+            None
+          </label>
+        </li>
+        <li>
+          <label>
+            <input
+              type="radio"
+              value="mine"
+              disabled={Number(ship?.remainingMines) <= 0}
+              checked={action.deploy === "mine"}
+              onChange={() =>
+                setAction((prev) => ({ ...prev, deploy: "mine" }))
+              }
+            />
+            Deploy Mine ({Number(ship?.remainingMines) ?? 0} remaining)
+          </label>
+        </li>
+        <li>
+          <label>
+            <input
+              type="radio"
+              value="torpedo"
+              disabled={Number(ship?.remainingTorpedoes) <= 0}
+              checked={action.deploy === "torpedo"}
+              onChange={() =>
+                setAction((prev) => ({ ...prev, deploy: "torpedo" }))
+              }
+            />
+            Deploy Torpedo ({Number(ship?.remainingTorpedoes) ?? 0} remaining)
+          </label>
+        </li>
+      </ul>
 
       <button onClick={handleActionSubmit}>Execute Action</button>
     </div>
