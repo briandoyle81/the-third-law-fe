@@ -78,6 +78,8 @@ const GameList: React.FC<GameListProps> = ({ setGameId, setActiveTab }) => {
   const [player, setPlayer] = useState<Player>();
   const [address, setAddress] = useState("");
 
+  const { address: myAddress } = useAccount();
+
   const handleAddressChange = (e: ChangeEvent<HTMLInputElement>) => {
     setAddress(e.target.value);
   };
@@ -271,6 +273,9 @@ const GameList: React.FC<GameListProps> = ({ setGameId, setActiveTab }) => {
             <ul>
               {games.map((game) => (
                 <li key={game.id.toString()}>
+                  {game.currentPlayer === myAddress ? (
+                    <div style={{ color: "yellow" }}>Your Turn</div>
+                  ) : null}
                   <div>Game ID: {game.id.toString()}</div>
                   <div>Player 1: {game.player1Address}</div>
                   <div>Player 2: {game.player2Address}</div>
