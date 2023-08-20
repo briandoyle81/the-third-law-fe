@@ -109,7 +109,10 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
           horizontal: "none",
           deploy: "none",
         });
-      }, 4000);
+
+        setNewInput({ row: BigInt(0), col: BigInt(0) }); // Reset newInput state
+        setInput({ row: BigInt(0), col: BigInt(0) }); // Reset input state
+      }, 2000);
     }
   }, [actionReceiptData, resetAction]);
 
@@ -151,7 +154,6 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   }
 
   const handleActionSubmit = () => {
-    setNewInput({ row: BigInt(0), col: BigInt(0) }); // Reset newInput state
     onAction(action);
 
     takeTurn({

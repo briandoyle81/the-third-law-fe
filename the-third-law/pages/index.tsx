@@ -5,6 +5,7 @@ import { useState } from "react";
 import GameList from "../components/gameList";
 import GameBoard from "../components/gameBoard";
 import GameDescription from "../components/gameDescription";
+import Leaderboard from "../components/leaderboard";
 
 const Home: NextPage = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -19,15 +20,17 @@ const Home: NextPage = () => {
 
       <nav>
         <ul className={styles.tabList}>
-          {["Games", "???", "Current Game", "About"].map((tab, index) => (
-            <li
-              key={index}
-              className={activeTab === index ? styles.active : ""}
-              onClick={() => setActiveTab(index)}
-            >
-              {tab}
-            </li>
-          ))}
+          {["Games", "Leaderboard", "Current Game", "About"].map(
+            (tab, index) => (
+              <li
+                key={index}
+                className={activeTab === index ? styles.active : ""}
+                onClick={() => setActiveTab(index)}
+              >
+                {tab}
+              </li>
+            )
+          )}
         </ul>
       </nav>
 
@@ -35,7 +38,7 @@ const Home: NextPage = () => {
         {activeTab === 0 && (
           <GameList setGameId={setGameId} setActiveTab={setActiveTab} />
         )}
-        {activeTab === 1 && <div>Content for Tab 2</div>}
+        {activeTab === 1 && <Leaderboard />}
         {activeTab === 2 && <GameBoard gameId={gameId} setGameId={setGameId} />}
         {activeTab === 3 && <GameDescription />}
       </main>

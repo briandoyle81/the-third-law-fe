@@ -1,7 +1,5 @@
-import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
-
+import React, { useState, ChangeEvent, FormEvent } from "react";
 import { useAccount, useContractRead, useContractWrite } from "wagmi";
-
 import TheThirdLaw from "../deployments/TheThirdLaw.json";
 import { useIsMounted } from "../utils/useIsMounted";
 import { parseEther } from "viem";
@@ -128,6 +126,18 @@ const GameList: React.FC<GameListProps> = ({ setGameId, setActiveTab }) => {
   });
 
   const {
+    data: createOrJoinRandomGameData,
+    isError: isCreateOrJoinRandomGameError,
+    isLoading: isCreateOrJoinRandomGameLoading,
+    isSuccess: isCreateOrJoinRandomGameSuccess,
+    write: createOrJoinRandomGame,
+  } = useContractWrite({
+    address: TheThirdLaw.address as `0x${string}`,
+    abi: TheThirdLaw.abi,
+    functionName: "createOrJoinRandomGame",
+  });
+
+  const {
     data: gamesData,
     isError: isGamesDataError,
     isLoading: isGamesDataLoading,
@@ -174,24 +184,43 @@ const GameList: React.FC<GameListProps> = ({ setGameId, setActiveTab }) => {
 
   function renderInviteForm() {
     return (
-      <form onSubmit={handleSubmit}>
-        <label>
-          Address to Invite:
-          <input
-            type="text"
-            value={address}
-            onChange={handleAddressChange}
-            placeholder="Enter an address"
-          />
-        </label>
-        <button type="submit">Submit</button>
-      </form>
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <form
+          onSubmit={handleSubmit}
+          style={{ display: "flex", alignItems: "center" }}
+        >
+          <label>
+            Invite a Player by Address:
+            <input
+              type="text"
+              value={address}
+              onChange={handleAddressChange}
+              placeholder="Enter an address"
+            />
+          </label>
+          <button type="submit">Submit</button>
+        </form>
+        {renderJoinOrCreateRandomGameButton()}
+      </div>
+    );
+  }
+
+  function renderJoinOrCreateRandomGameButton() {
+    return (
+      <button
+        onClick={() => createOrJoinRandomGame({ value: debug_game_cost })}
+      >
+        Create or Join Random Game
+      </button>
     );
   }
 
   function renderJoinButton(game: Game) {
     if (!player || !player.inviteIds || !player.inviteIds.includes(game.id)) {
       return null;
+    }
+    if (game.player2Address === "0x0000000000000000000000000000000000000000") {
+      return <div>Waiting for a player to join...</div>;
     }
     if (game.status !== Status.NotStarted) {
       return null;

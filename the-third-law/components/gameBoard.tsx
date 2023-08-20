@@ -82,6 +82,10 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
     },
   });
 
+  if (!gameId) {
+    return <div>Please select a game from the Games tab.</div>;
+  }
+
   const isSquareShipPosition = (
     row: number,
     col: number,
