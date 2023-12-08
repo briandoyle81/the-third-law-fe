@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Game, Ship, Vector2 } from "./gameList";
 
-import { useAccount, useContractWrite, useWaitForTransaction } from "wagmi";
+import { useContractWrite, useWaitForTransaction } from "wagmi";
 
 import TheThirdLaw from "../deployments/TheThirdLaw.json";
 

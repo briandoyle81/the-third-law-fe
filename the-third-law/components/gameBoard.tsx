@@ -1,6 +1,6 @@
 import React from "react";
 import { Game, Mine, Ship, Torpedo, Vector2 } from "./gameList";
-import { useAccount, useContractRead } from "wagmi";
+import { useContractRead } from "wagmi";
 
 import {
   containerStyle,
@@ -25,6 +25,8 @@ import TheThirdLaw from "../deployments/TheThirdLaw.json";
 import { useIsMounted } from "../utils/useIsMounted";
 
 import ControlPanel from "./controlPanel";
+import { usePrivyWagmi } from "@privy-io/wagmi-connector";
+import { usePrivy } from "@privy-io/react-auth";
 
 // TODO: Get these from the contract
 const BOARD_SIZE = 31;
@@ -64,7 +66,9 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
     col: BigInt(0),
   });
 
-  const { address } = useAccount();
+  const { ready, authenticated } = usePrivy();
+  // const { wallets } = useWallets(); // TODO: See https://docs.privy.io/guide/guides/wagmi
+  const { wallet: activeWallet, setActiveWallet } = usePrivyWagmi();
 
   useContractRead({
     address: TheThirdLaw.address as `0x${string}`,
@@ -98,7 +102,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
     col: number,
     ship: Ship | undefined
   ): boolean => {
-    if (ship?.ownerAddress === address) {
+    if (ship?.ownerAddress === activeWallet?.address) {
       return (
         !!ship &&
         Number(ship.position.row) +
@@ -531,8 +535,8 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
         <ControlPanel
           game={game}
           ship={getCurrentPlayerShip()}
-          localPlayerTurn={game.currentPlayer === address}
-          localPlayerAddress={address as string}
+          localPlayerTurn={game.currentPlayer === activeWallet?.address}
+          localPlayerAddress={activeWallet?.address as string}
           input={input}
           setInput={setInput}
           onAction={(action) => {}}

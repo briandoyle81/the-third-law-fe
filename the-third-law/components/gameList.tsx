@@ -1,8 +1,11 @@
-import React, { useState, ChangeEvent, FormEvent } from "react";
-import { useAccount, useContractRead, useContractWrite } from "wagmi";
+import React, { useState, ChangeEvent, FormEvent, useEffect } from "react";
+import { useContractRead, useContractWrite } from "wagmi";
 import TheThirdLaw from "../deployments/TheThirdLaw.json";
 import { useIsMounted } from "../utils/useIsMounted";
 import { parseEther } from "viem";
+import { usePrivyWagmi } from "@privy-io/wagmi-connector";
+import { usePrivy } from "@privy-io/react-auth";
+import { baseGoerli } from "wagmi/chains";
 
 export const debug_game_cost = parseEther("0.001");
 
@@ -78,7 +81,23 @@ const GameList: React.FC<GameListProps> = ({ setGameId, setActiveTab }) => {
   const [player, setPlayer] = useState<Player>();
   const [address, setAddress] = useState("");
 
-  const { address: myAddress } = useAccount();
+  const { ready, authenticated } = usePrivy();
+  // const { wallets } = useWallets(); // TODO: See https://docs.privy.io/guide/guides/wagmi
+  const { wallet: activeWallet, setActiveWallet } = usePrivyWagmi();
+
+  useEffect(() => {
+    async function switchChain() {
+      if (activeWallet) {
+        try {
+          await activeWallet.switchChain(baseGoerli.id);
+        } catch (error) {
+          console.error("Error switching chain:", error);
+        }
+      }
+    }
+
+    switchChain();
+  }, [activeWallet]);
 
   const handleAddressChange = (e: ChangeEvent<HTMLInputElement>) => {
     setAddress(e.target.value);
@@ -148,10 +167,13 @@ const GameList: React.FC<GameListProps> = ({ setGameId, setActiveTab }) => {
     address: TheThirdLaw.address as `0x${string}`,
     abi: TheThirdLaw.abi,
     functionName: "getGamesForPlayer",
-    args: [useAccount()?.address],
+    args: [activeWallet?.address],
     watch: true,
+    enabled: !!activeWallet?.address,
     onSettled(data, error) {
-      setGames((data as Game[]).slice().reverse());
+      if (data) {
+        setGames((data as Game[]).slice().reverse());
+      }
     },
   });
 
@@ -164,8 +186,9 @@ const GameList: React.FC<GameListProps> = ({ setGameId, setActiveTab }) => {
     address: TheThirdLaw.address as `0x${string}`,
     abi: TheThirdLaw.abi,
     functionName: "getPlayer",
-    args: [useAccount()?.address],
+    args: [activeWallet?.address],
     watch: true,
+    enabled: !!activeWallet?.address,
     onSettled(data, error) {
       setPlayer(data as Player);
     },
@@ -273,14 +296,15 @@ const GameList: React.FC<GameListProps> = ({ setGameId, setActiveTab }) => {
             <ul>
               {games.map((game) => (
                 <li key={game.id.toString()}>
-                  {game.currentPlayer === myAddress ? (
+                  {game.currentPlayer === activeWallet?.address &&
+                  game.status === Status.Active ? (
                     <div style={{ color: "yellow" }}>Your Turn</div>
                   ) : null}
+                  <div>Status: {Status[game.status]}</div>
                   <div>Game ID: {game.id.toString()}</div>
                   <div>Player 1: {game.player1Address}</div>
                   <div>Player 2: {game.player2Address}</div>
                   <div>Value: {game.value.toString()}</div>
-                  <div>Status: {Status[game.status]}</div>
                   <div>Current Player: {game.currentPlayer}</div>
                   {renderJoinButton(game)}
                   {renderGoToGameButton(game)}
@@ -294,12 +318,16 @@ const GameList: React.FC<GameListProps> = ({ setGameId, setActiveTab }) => {
     }
   }
 
-  return (
-    <div>
-      {renderInviteForm()}
-      {renderGameData()}
-    </div>
-  );
+  if (ready && authenticated) {
+    return (
+      <div>
+        {renderInviteForm()}
+        {renderGameData()}
+      </div>
+    );
+  } else {
+    return <div>Please login to view games</div>;
+  }
 };
 
 export default GameList;
