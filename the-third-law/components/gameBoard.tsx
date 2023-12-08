@@ -27,10 +27,10 @@ import { useIsMounted } from "../utils/useIsMounted";
 import ControlPanel from "./controlPanel";
 
 // TODO: Get these from the contract
-const BOARD_SIZE = 41;
-const START_INDEX = -20;
-const END_INDEX = 20;
-const ASTEROID_SIZE = 10;
+const BOARD_SIZE = 31;
+const START_INDEX = -15;
+const END_INDEX = 15;
+const ASTEROID_SIZE = 7;
 const MINE_RANGE = 2;
 const TORPEDO_ACCEL = 1;
 
@@ -66,12 +66,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
 
   const { address } = useAccount();
 
-  const {
-    data: gameData,
-    isError: isGameError,
-    isLoading: isGameLoading,
-    isSuccess: isGameSuccess,
-  } = useContractRead({
+  useContractRead({
     address: TheThirdLaw.address as `0x${string}`,
     abi: TheThirdLaw.abi,
     functionName: "getGame",
@@ -493,9 +488,9 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
                   squareStyle = {
                     ...blinkingOutlineStyle,
                     border: "1px dashed red",
-                  }; // apply the desired style
+                  };
                 } else {
-                  squareStyle = { ...squareStyle, border: "1px dashed red" }; // apply the desired style
+                  squareStyle = { ...squareStyle, border: "1px dashed red" };
                 }
               } else if (
                 isSquareWithinTorpedoEffectRange(
@@ -514,9 +509,9 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
                   squareStyle = {
                     ...blinkingOutlineStyle,
                     border: "1px dashed blue",
-                  }; // apply the desired style
+                  };
                 } else {
-                  squareStyle = { ...squareStyle, border: "1px dashed blue" }; // apply the desired style
+                  squareStyle = { ...squareStyle, border: "1px dashed blue" };
                 }
               }
 
@@ -540,9 +535,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
           localPlayerAddress={address as string}
           input={input}
           setInput={setInput}
-          onAction={(action) => {
-            // Handle the player's action here
-          }}
+          onAction={(action) => {}}
         />
       )}
     </div>

@@ -3,8 +3,8 @@ export const containerStyle: React.CSSProperties = {
 };
 
 export const blackSquareStyle: React.CSSProperties = {
-  width: "20px",
-  height: "20px",
+  width: "30px",
+  height: "30px",
   // border: "1px solid white",
   backgroundColor: "black",
   display: "inline-block",
