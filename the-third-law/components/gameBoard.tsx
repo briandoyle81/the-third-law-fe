@@ -27,6 +27,7 @@ import { useIsMounted } from "../utils/useIsMounted";
 import ControlPanel from "./controlPanel";
 import { usePrivyWagmi } from "@privy-io/wagmi-connector";
 import { usePrivy } from "@privy-io/react-auth";
+import { useSmartAccount } from "../hooks/SmartAccountContext";
 
 // TODO: Get these from the contract
 const BOARD_SIZE = 31;
@@ -68,7 +69,13 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
 
   const { ready, authenticated } = usePrivy();
   // const { wallets } = useWallets(); // TODO: See https://docs.privy.io/guide/guides/wagmi
-  const { wallet: activeWallet, setActiveWallet } = usePrivyWagmi();
+  // const { wallet: activeWallet, setActiveWallet } = usePrivyWagmi();
+  const {
+    smartAccountAddress,
+    smartAccountProvider,
+    sendSponsoredUserOperation,
+    eoa,
+  } = useSmartAccount();
 
   useContractRead({
     address: TheThirdLaw.address as `0x${string}`,
@@ -102,7 +109,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
     col: number,
     ship: Ship | undefined
   ): boolean => {
-    if (ship?.ownerAddress === activeWallet?.address) {
+    if (ship?.ownerAddress === smartAccountAddress) {
       return (
         !!ship &&
         Number(ship.position.row) +
@@ -535,8 +542,8 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
         <ControlPanel
           game={game}
           ship={getCurrentPlayerShip()}
-          localPlayerTurn={game.currentPlayer === activeWallet?.address}
-          localPlayerAddress={activeWallet?.address as string}
+          localPlayerTurn={game.currentPlayer === smartAccountAddress}
+          localPlayerAddress={smartAccountAddress as string}
           input={input}
           setInput={setInput}
           onAction={(action) => {}}

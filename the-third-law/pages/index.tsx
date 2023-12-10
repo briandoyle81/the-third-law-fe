@@ -8,6 +8,7 @@ import Leaderboard from "../components/leaderboard";
 import { usePrivy } from "@privy-io/react-auth";
 import { usePrivyWagmi } from "@privy-io/wagmi-connector";
 import { baseGoerli } from "wagmi/chains";
+import { useSmartAccount } from "../hooks/SmartAccountContext";
 
 const Home: NextPage = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -17,12 +18,25 @@ const Home: NextPage = () => {
   // const { wallets } = useWallets(); // TODO: See https://docs.privy.io/guide/guides/wagmi
   const { wallet: activeWallet, setActiveWallet } = usePrivyWagmi();
 
+  const {
+    smartAccountAddress,
+    smartAccountProvider,
+    sendSponsoredUserOperation,
+    eoa,
+  } = useSmartAccount();
+
   return (
     <div className={styles.container}>
       <header className={styles.header}>
         <h1>The Third Law - Testnet</h1>
         {activeWallet?.chainId !== "eip155:" + baseGoerli.id.toString() && (
           <div>Please Change to Base Goerli</div>
+        )}
+        {ready && authenticated && activeWallet && (
+          <div>
+            <div>Wallet: {activeWallet.address}</div>
+            <div>SAA: {smartAccountAddress}</div>
+          </div>
         )}
         <button onClick={ready && authenticated ? logout : login}>
           {ready && authenticated ? "Logout" : "Login"}

@@ -7,6 +7,7 @@ import { publicProvider } from "wagmi/providers/public";
 import { alchemyProvider } from "wagmi/providers/alchemy";
 import { PrivyProvider } from "@privy-io/react-auth";
 import { PrivyWagmiConnector } from "@privy-io/wagmi-connector";
+import { SmartAccountProvider } from "../hooks/SmartAccountContext";
 
 const configureChainsConfig = configureChains(
   [baseGoerli],
@@ -23,7 +24,7 @@ function MyApp({ Component, pageProps }: AppProps) {
     <PrivyProvider
       appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}
       config={{
-        loginMethods: ["email", "wallet", "google"], // TODO: Base paymaster example does not have wallet
+        loginMethods: ["email", "google", "twitter", "github"], // TODO: Base paymaster example does not have wallet
         embeddedWallets: {
           createOnLogin: "users-without-wallets",
           noPromptOnSignature: true, // TODO: I can probably use this to set whether or not the user pays or paymaster pays
@@ -31,7 +32,9 @@ function MyApp({ Component, pageProps }: AppProps) {
       }}
     >
       <PrivyWagmiConnector wagmiChainsConfig={configureChainsConfig}>
-        <Component {...pageProps} />
+        <SmartAccountProvider>
+          <Component {...pageProps} />
+        </SmartAccountProvider>
       </PrivyWagmiConnector>
     </PrivyProvider>
   );
