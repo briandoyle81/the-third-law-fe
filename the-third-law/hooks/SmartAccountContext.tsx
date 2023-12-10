@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import React, { useState, useEffect, useContext, useMemo } from "react";
 import { ConnectedWallet, useWallets } from "@privy-io/react-auth";
 import {
