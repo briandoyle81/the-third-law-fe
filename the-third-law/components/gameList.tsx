@@ -1,8 +1,15 @@
-import React, { useState, ChangeEvent, FormEvent } from "react";
-import { useAccount, useContractRead, useContractWrite } from "wagmi";
+import React, { useState, ChangeEvent, FormEvent, useEffect } from "react";
+import { useContractRead, useContractWrite } from "wagmi";
 import TheThirdLaw from "../deployments/TheThirdLaw.json";
 import { useIsMounted } from "../utils/useIsMounted";
-import { parseEther } from "viem";
+import { encodeFunctionData, parseEther } from "viem";
+import { usePrivyWagmi } from "@privy-io/wagmi-connector";
+import { usePrivy } from "@privy-io/react-auth";
+import { baseGoerli } from "wagmi/chains";
+
+import { useSmartAccount } from "../hooks/SmartAccountContext";
+import { NFT_ADDRESS } from "../lib/constants";
+import ABI from "../lib/nftABI.json";
 
 export const debug_game_cost = parseEther("0.001");
 
@@ -78,7 +85,30 @@ const GameList: React.FC<GameListProps> = ({ setGameId, setActiveTab }) => {
   const [player, setPlayer] = useState<Player>();
   const [address, setAddress] = useState("");
 
-  const { address: myAddress } = useAccount();
+  const { ready, authenticated } = usePrivy();
+  // const { wallets } = useWallets(); // TODO: See https://docs.privy.io/guide/guides/wagmi
+  const { wallet: activeWallet, setActiveWallet } = usePrivyWagmi();
+
+  const {
+    smartAccountAddress,
+    smartAccountProvider,
+    sendSponsoredUserOperation,
+    eoa,
+  } = useSmartAccount();
+
+  useEffect(() => {
+    async function switchChain() {
+      if (activeWallet) {
+        try {
+          await activeWallet.switchChain(baseGoerli.id);
+        } catch (error) {
+          console.error("Error switching chain:", error);
+        }
+      }
+    }
+
+    switchChain();
+  }, [activeWallet]);
 
   const handleAddressChange = (e: ChangeEvent<HTMLInputElement>) => {
     setAddress(e.target.value);
@@ -90,12 +120,100 @@ const GameList: React.FC<GameListProps> = ({ setGameId, setActiveTab }) => {
     setAddress(""); // Reset the input field after submission
   };
 
+  const handleFreeInviteSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!smartAccountProvider || !smartAccountAddress) {
+      console.error("Smart account not ready");
+      return;
+    }
+
+    if (!activeWallet) {
+      console.error("Active wallet not ready");
+      return;
+    }
+
+    console.log("Free submit");
+    try {
+      const userOpHash = await sendSponsoredUserOperation({
+        // from: activeWallet.address as `0x${string}`, // This doesn't change player 1, it's still the sca address, which is msg.sender
+        from: smartAccountAddress,
+        to: TheThirdLaw.address as `0x${string}`,
+        data: encodeFunctionData({
+          abi: TheThirdLaw.abi,
+          functionName: "inviteToFreeGame",
+          args: [address],
+        }),
+      });
+
+      const transactionHash = await smartAccountProvider
+        .waitForUserOperationTransaction(userOpHash)
+        .then((receipt) => {
+          console.log("receipt", receipt);
+          return receipt;
+        });
+    } catch (error) {
+      console.error("Error inviting to free game:", error);
+    }
+
+    setAddress(""); // Reset the input field after submission
+  };
+
   function handleAcceptButtonClick(gameId: BigInt) {
     acceptInvite({ args: [gameId], value: debug_game_cost });
   }
 
   function handleRejectButtonClick(gameId: BigInt) {
     rejectInvite({ args: [gameId] });
+  }
+
+  async function handleAcceptForFreeButtonClick(gameId: BigInt) {
+    if (!smartAccountProvider || !smartAccountAddress) {
+      console.error("Smart account not ready");
+      return;
+    }
+
+    if (!activeWallet) {
+      console.error("Active wallet not ready");
+      return;
+    }
+
+    try {
+      // I think this is failing in my contract because I'm relying on msg.sender
+      // for things and the wallet address is no longer msg.sender
+      const userOpHash = await sendSponsoredUserOperation({
+        from: smartAccountAddress,
+        to: TheThirdLaw.address as `0x${string}`,
+        data: encodeFunctionData({
+          abi: TheThirdLaw.abi,
+          functionName: "acceptFreeInvite",
+          args: [gameId],
+        }),
+      });
+
+      // THIS WORKS!!!
+      // console.log("Clicked button");
+      // console.log("smartAccountAddress", smartAccountAddress);
+      // console.log("activeWallet.address", activeWallet.address);
+      // console.log(activeWallet);
+      // const userOpHash = await sendSponsoredUserOperation({
+      //   from: smartAccountAddress,
+      //   to: NFT_ADDRESS,
+      //   data: encodeFunctionData({
+      //     abi: ABI,
+      //     functionName: "mint",
+      //     args: ["0xc0a07bd17C5e554759fE2c8A53dd7768A87C24D0"],
+      //   }),
+      // });
+
+      const transactionHash = await smartAccountProvider
+        .waitForUserOperationTransaction(userOpHash)
+        .then((receipt) => {
+          console.log("receipt", receipt);
+          return receipt;
+        });
+    } catch (error) {
+      console.error("Error accepting invite for free:", error);
+    }
   }
 
   function handleGoToGame(gameId: BigInt) {
@@ -148,10 +266,12 @@ const GameList: React.FC<GameListProps> = ({ setGameId, setActiveTab }) => {
     address: TheThirdLaw.address as `0x${string}`,
     abi: TheThirdLaw.abi,
     functionName: "getGamesForPlayer",
-    args: [useAccount()?.address],
-    watch: true,
+    args: [smartAccountAddress],
+    watch: smartAccountAddress !== undefined,
     onSettled(data, error) {
-      setGames((data as Game[]).slice().reverse());
+      if (data) {
+        setGames((data as Game[]).slice().reverse());
+      }
     },
   });
 
@@ -164,8 +284,8 @@ const GameList: React.FC<GameListProps> = ({ setGameId, setActiveTab }) => {
     address: TheThirdLaw.address as `0x${string}`,
     abi: TheThirdLaw.abi,
     functionName: "getPlayer",
-    args: [useAccount()?.address],
-    watch: true,
+    args: [smartAccountAddress],
+    watch: smartAccountAddress !== undefined,
     onSettled(data, error) {
       setPlayer(data as Player);
     },
@@ -203,6 +323,21 @@ const GameList: React.FC<GameListProps> = ({ setGameId, setActiveTab }) => {
           <button type="submit">Submit</button>
         </form>
         {renderJoinOrCreateRandomGameButton()}
+        <form
+          onSubmit={handleFreeInviteSubmit}
+          style={{ display: "flex", alignItems: "center" }}
+        >
+          <label>
+            Invite a New Player to Free Game:
+            <input
+              type="text"
+              value={address}
+              onChange={handleAddressChange}
+              placeholder="Enter an address"
+            />
+          </label>
+          <button type="submit">Request Free Game</button>
+        </form>
       </div>
     );
   }
@@ -234,6 +369,9 @@ const GameList: React.FC<GameListProps> = ({ setGameId, setActiveTab }) => {
         </button>
         <button onClick={() => handleAcceptButtonClick(game.id)}>
           Accept Invite
+        </button>
+        <button onClick={() => handleAcceptForFreeButtonClick(game.id)}>
+          Accept Free
         </button>
       </div>
     );
@@ -273,14 +411,15 @@ const GameList: React.FC<GameListProps> = ({ setGameId, setActiveTab }) => {
             <ul>
               {games.map((game) => (
                 <li key={game.id.toString()}>
-                  {game.currentPlayer === myAddress ? (
+                  {game.currentPlayer === smartAccountAddress &&
+                  game.status === Status.Active ? (
                     <div style={{ color: "yellow" }}>Your Turn</div>
                   ) : null}
+                  <div>Status: {Status[game.status]}</div>
                   <div>Game ID: {game.id.toString()}</div>
                   <div>Player 1: {game.player1Address}</div>
                   <div>Player 2: {game.player2Address}</div>
                   <div>Value: {game.value.toString()}</div>
-                  <div>Status: {Status[game.status]}</div>
                   <div>Current Player: {game.currentPlayer}</div>
                   {renderJoinButton(game)}
                   {renderGoToGameButton(game)}
@@ -294,12 +433,16 @@ const GameList: React.FC<GameListProps> = ({ setGameId, setActiveTab }) => {
     }
   }
 
-  return (
-    <div>
-      {renderInviteForm()}
-      {renderGameData()}
-    </div>
-  );
+  if (ready && authenticated) {
+    return (
+      <div>
+        {renderInviteForm()}
+        {renderGameData()}
+      </div>
+    );
+  } else {
+    return <div>Please login to view games</div>;
+  }
 };
 
 export default GameList;

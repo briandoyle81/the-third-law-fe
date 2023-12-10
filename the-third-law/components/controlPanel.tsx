@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Game, Ship, Vector2 } from "./gameList";
 
-import { useAccount, useContractWrite, useWaitForTransaction } from "wagmi";
+import { useContractWrite, useWaitForTransaction } from "wagmi";
 
 import TheThirdLaw from "../deployments/TheThirdLaw.json";
+import { useSmartAccount } from "../hooks/SmartAccountContext";
+import { encodeFunctionData } from "viem";
 
 export enum Action {
   None,
@@ -79,6 +81,13 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
     row: BigInt(0),
     col: BigInt(0),
   });
+
+  const {
+    smartAccountAddress,
+    smartAccountProvider,
+    sendSponsoredUserOperation,
+    eoa,
+  } = useSmartAccount();
 
   const {
     data: actionData,
@@ -168,6 +177,43 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
         action.deploy === "mine" ? 2 : action.deploy === "torpedo" ? 1 : 0,
       ],
     });
+  };
+
+  const handleFreeActionSubmit = async () => {
+    if (!smartAccountProvider || !smartAccountAddress) {
+      console.error("Smart account not ready");
+      return;
+    }
+
+    try {
+      const userOpHash = await sendSponsoredUserOperation({
+        from: smartAccountAddress,
+        to: TheThirdLaw.address as `0x${string}`,
+        data: encodeFunctionData({
+          abi: TheThirdLaw.abi,
+          functionName: "takeFreeTurn",
+          args: [
+            game.id,
+            action.horizontal === "left"
+              ? 1
+              : action.horizontal === "right"
+              ? 2
+              : 0,
+            action.vertical === "up" ? 1 : action.vertical === "down" ? 2 : 0,
+            action.deploy === "mine" ? 2 : action.deploy === "torpedo" ? 1 : 0,
+          ],
+        }),
+      });
+
+      const transactionHash = await smartAccountProvider
+        .waitForUserOperationTransaction(userOpHash)
+        .then((receipt) => {
+          console.log("receipt", receipt);
+          return receipt;
+        });
+    } catch (error) {
+      console.error("Error inviting to free game:", error);
+    }
   };
 
   function getColor() {
@@ -289,6 +335,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
       </ul>
 
       <button onClick={handleActionSubmit}>Execute Action</button>
+      <button onClick={handleFreeActionSubmit}>Execute Free Action</button>
     </div>
   );
 };
