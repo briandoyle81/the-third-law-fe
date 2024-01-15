@@ -8,8 +8,6 @@ import { usePrivy } from "@privy-io/react-auth";
 import { baseGoerli } from "wagmi/chains";
 
 import { useSmartAccount } from "../hooks/SmartAccountContext";
-import { NFT_ADDRESS } from "../lib/constants";
-import ABI from "../lib/nftABI.json";
 
 export const debug_game_cost = parseEther("0.001");
 
@@ -26,26 +24,26 @@ export enum Status {
 
 export type Player = {
   ownerAddress: string;
-  gameIds: BigInt[];
-  inviteIds: BigInt[];
-  victories: BigInt; // Enemy was destroyed
-  defaultVictories: BigInt; // Enemy was forced to flee
-  defaultLosses: BigInt; // Player was forced to flee
-  draws: BigInt; // Both players ran out of weapons
-  losses: BigInt; // Player was destroyed
-  eloRating: BigInt;
-  currentShipId: BigInt;
+  gameIds: bigint[];
+  inviteIds: bigint[];
+  victories: bigint; // Enemy was destroyed
+  defaultVictories: bigint; // Enemy was forced to flee
+  defaultLosses: bigint; // Player was forced to flee
+  draws: bigint; // Both players ran out of weapons
+  losses: bigint; // Player was destroyed
+  eloRating: bigint;
+  currentShipId: bigint;
 };
 
 export type Vector2 = {
-  row: BigInt;
-  col: BigInt;
+  row: bigint;
+  col: bigint;
 };
 
 export type Torpedo = {
   position: Vector2;
   velocity: Vector2;
-  remainingFuel: BigInt;
+  remainingFuel: bigint;
 };
 
 export type Mine = {
@@ -57,21 +55,25 @@ export type Ship = {
   ownerAddress: string;
   position: Vector2;
   velocity: Vector2;
-  remainingTorpedoes: BigInt;
-  remainingMines: BigInt;
+  remainingTorpedoes: bigint;
+  remainingMines: bigint;
   torpedoes: Torpedo[];
   mines: Mine[];
 };
 
 export type Game = {
-  id: BigInt;
+  id: bigint;
   player1Address: string;
   player2Address: string;
   player1Ship: Ship;
   player2Ship: Ship;
   status: Status;
-  value: BigInt; // Amount to be paid to victor, or split if there is a tie
+  value: bigint; // Amount to be paid to victor, or split if there is a tie
   currentPlayer: string; // Set to None if game not started or is over
+  lastTurnTimestamp: bigint;
+  round: bigint;
+  logBlocks: bigint[];
+  free: boolean;
 };
 
 interface GameListProps {
@@ -84,6 +86,21 @@ const GameList: React.FC<GameListProps> = ({ setGameId, setActiveTab }) => {
   const [games, setGames] = useState<Game[]>([]);
   const [player, setPlayer] = useState<Player>();
   const [address, setAddress] = useState("");
+
+  const [pageIsFocused, setPageIsFocused] = useState(false);
+
+  useEffect(() => {
+    const onFocus = () => setPageIsFocused(true);
+    const onBlur = () => setPageIsFocused(false);
+
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("blur", onBlur);
+
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("blur", onBlur);
+    };
+  }, []);
 
   const { ready, authenticated } = usePrivy();
   // const { wallets } = useWallets(); // TODO: See https://docs.privy.io/guide/guides/wagmi
@@ -267,7 +284,7 @@ const GameList: React.FC<GameListProps> = ({ setGameId, setActiveTab }) => {
     abi: TheThirdLaw.abi,
     functionName: "getGamesForPlayer",
     args: [smartAccountAddress],
-    watch: smartAccountAddress !== undefined,
+    watch: true,
     onSettled(data, error) {
       if (data) {
         setGames((data as Game[]).slice().reverse());
@@ -285,7 +302,7 @@ const GameList: React.FC<GameListProps> = ({ setGameId, setActiveTab }) => {
     abi: TheThirdLaw.abi,
     functionName: "getPlayer",
     args: [smartAccountAddress],
-    watch: smartAccountAddress !== undefined,
+    // watch: pageIsFocused, // I don't think this needs watching, it wont change
     onSettled(data, error) {
       setPlayer(data as Player);
     },
@@ -350,6 +367,11 @@ const GameList: React.FC<GameListProps> = ({ setGameId, setActiveTab }) => {
         Create or Join Random Game
       </button>
     );
+  }
+
+  function renderAcceptButton(game: Game) {
+    if (game.free) {
+    }
   }
 
   function renderJoinButton(game: Game) {
@@ -440,8 +462,10 @@ const GameList: React.FC<GameListProps> = ({ setGameId, setActiveTab }) => {
         {renderGameData()}
       </div>
     );
+  } else if (ready && !authenticated) {
+    return <div>Please log in to view games</div>;
   } else {
-    return <div>Please login to view games</div>;
+    return <div>Loading...</div>;
   }
 };
 

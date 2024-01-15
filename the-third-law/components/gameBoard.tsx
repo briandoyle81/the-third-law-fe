@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Game, Mine, Ship, Torpedo, Vector2 } from "./gameList";
 import { useContractRead } from "wagmi";
 
@@ -22,10 +22,8 @@ import {
 } from "../styles/boardStyles";
 
 import TheThirdLaw from "../deployments/TheThirdLaw.json";
-import { useIsMounted } from "../utils/useIsMounted";
 
 import ControlPanel from "./controlPanel";
-import { usePrivyWagmi } from "@privy-io/wagmi-connector";
 import { usePrivy } from "@privy-io/react-auth";
 import { useSmartAccount } from "../hooks/SmartAccountContext";
 
@@ -60,12 +58,26 @@ interface GameBoardProps {
 }
 
 const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
-  const [game, setGame] = React.useState<Game>();
-  const [hoveredMine, setHoveredMine] = React.useState<Mine | null>(null);
-  const [input, setInput] = React.useState<Vector2>({
+  const [game, setGame] = useState<Game>();
+  const [hoveredMine, setHoveredMine] = useState<Mine | null>(null);
+  const [input, setInput] = useState<Vector2>({
     row: BigInt(0),
     col: BigInt(0),
   });
+  const [pageIsFocused, setPageIsFocused] = useState(false);
+
+  useEffect(() => {
+    const onFocus = () => setPageIsFocused(true);
+    const onBlur = () => setPageIsFocused(false);
+
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("blur", onBlur);
+
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("blur", onBlur);
+    };
+  }, []);
 
   const { ready, authenticated } = usePrivy();
   // const { wallets } = useWallets(); // TODO: See https://docs.privy.io/guide/guides/wagmi
@@ -82,7 +94,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameId, setGameId }) => {
     abi: TheThirdLaw.abi,
     functionName: "getGame",
     args: [gameId],
-    watch: true,
+    watch: pageIsFocused,
     onSettled(data, error) {
       setGame(data as Game);
     },

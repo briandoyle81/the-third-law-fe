@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useContractRead } from "wagmi";
 
 import TheThirdLaw from "../deployments/TheThirdLaw.json";
@@ -10,6 +10,20 @@ export type PlayerELO = {
 
 const Leaderboard = () => {
   const [sortedPlayers, setSortedPlayers] = useState<PlayerELO[]>([]);
+  const [pageIsFocused, setPageIsFocused] = useState(false);
+
+  useEffect(() => {
+    const onFocus = () => setPageIsFocused(true);
+    const onBlur = () => setPageIsFocused(false);
+
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("blur", onBlur);
+
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("blur", onBlur);
+    };
+  }, []);
 
   const {
     data: playersData,
@@ -20,7 +34,7 @@ const Leaderboard = () => {
     address: TheThirdLaw.address as `0x${string}`,
     abi: TheThirdLaw.abi,
     functionName: "getAllELO",
-    watch: true,
+    watch: pageIsFocused,
     onSettled(data, error) {
       setSortedPlayers(
         (data as PlayerELO[])
